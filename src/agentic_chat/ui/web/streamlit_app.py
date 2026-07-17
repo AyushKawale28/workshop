@@ -35,7 +35,7 @@ def _apply_chatgpt_style() -> None:
         }}
         [data-testid="stHeader"] {{ background: rgba(5, 11, 16, .55); }}
         [data-testid="stSidebar"] {{ background: rgba(7, 14, 20, .96); border-right: 1px solid #17425c; }}
-        [data-testid="stSidebar"] * {{ color: #ececec; }}
+        [data-testid="stSidebar"] * { color: #ececec; }
         [data-testid="stChatMessage"] {{
             background: rgba(10, 19, 27, .72);
             border: 1px solid rgba(76, 181, 255, .18);
