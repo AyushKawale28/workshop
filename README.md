@@ -55,8 +55,8 @@ tests/
 rag/
   data/
     README.md
-    fairy_tale_rag.md
-    fairy_tale_rag_chunks/
+    java_oop_concepts.md
+    java_oop_concepts_chunks/
       chunk_01.md
       chunk_02.md
       ...
@@ -106,8 +106,8 @@ rag/
   - Knowledge-base files consumed by RAG indexing.
   - Store Markdown/text/json/csv/rst files here.
 
-- `rag/data/fairy_tale_rag_chunks/`
-  - Example of pre-split content chunks to improve retrieval quality.
+- `rag/data/java_oop_concepts_chunks/`
+  - Java OOP reference material with runnable examples and expected output.
 
 ## Setup
 
@@ -152,6 +152,7 @@ uv sync
 
 - Prefer Markdown files for better readability and retrieval quality.
 - Keep long stories/content split into multiple chunk files under a folder like `rag/data/<topic>_chunks/`.
+- Use fenced language blocks for source code and fenced `output` blocks for expected console output.
 - Qdrant index is in-memory, so restart requires reindexing.
 
 ## Run Terminal UI
@@ -175,6 +176,7 @@ uv run agentic-chat --web
 Web sidebar controls:
 - `Use RAG for answers` toggle enables/disables RAG per session
 - `Reindex RAG` rebuilds in-memory index and updates chunk/file counts in UI
+- Fenced source code and output are rendered as separate, wrapping code blocks
 
 ## Quality Checks
 
