@@ -1,4 +1,6 @@
+import base64
 import re
+from pathlib import Path
 
 from agentic_chat.core.config import Settings, load_settings
 from agentic_chat.core.modes import MODE_DETAILS, SessionState, build_messages
@@ -13,6 +15,45 @@ FENCED_BLOCK_PATTERN = re.compile(
     re.DOTALL,
 )
 OUTPUT_LANGUAGES = {"console", "output", "stdout"}
+
+
+def _apply_chatgpt_style() -> None:
+    """Apply a readable ChatGPT-like chat layout over the cricket artwork."""
+    import streamlit as st
+
+    background_path = Path(__file__).with_name("assets") / "cricket-ai-background.png"
+    background_image = base64.b64encode(background_path.read_bytes()).decode("ascii")
+
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background:
+                linear-gradient(rgba(5, 11, 16, .86), rgba(5, 11, 16, .90)),
+                url("data:image/png;base64,{background_image}") center / cover fixed;
+            color: #ececec;
+        }}
+        [data-testid="stHeader"] {{ background: rgba(5, 11, 16, .55); }}
+        [data-testid="stSidebar"] {{ background: rgba(7, 14, 20, .96); border-right: 1px solid #17425c; }}
+        [data-testid="stSidebar"] * {{ color: #ececec; }}
+        [data-testid="stChatMessage"] {{
+            background: rgba(10, 19, 27, .72);
+            border: 1px solid rgba(76, 181, 255, .18);
+            border-radius: 16px;
+            max-width: 900px;
+            margin: .75rem auto;
+        }}
+        [data-testid="stChatInput"] {{ max-width: 850px; margin: auto; }}
+        [data-testid="stChatInput"] textarea {{
+            background: rgba(17, 31, 42, .94); color: #ececec;
+            border: 1px solid rgba(76, 181, 255, .35); border-radius: 18px;
+        }}
+        .chat-title {{ text-align: center; font-size: 2rem; font-weight: 650; margin: 4.5rem 0 1.5rem; text-shadow: 0 2px 18px #000; }}
+        .chat-subtitle {{ text-align: center; color: #c2d5e2; margin-top: -1rem; margin-bottom: 2rem; text-shadow: 0 2px 18px #000; }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def build_client(settings: Settings) -> OpenRouterClient:
@@ -61,8 +102,8 @@ def _render_chat_content(content: str) -> None:
 def run() -> None:
     import streamlit as st
 
-    st.set_page_config(page_title="Agentic Chat Web", page_icon="AI", layout="wide")
-    st.title("Agentic Chat Web UI")
+    st.set_page_config(page_title="Ayush AI", page_icon="🤖", layout="wide")
+    _apply_chatgpt_style()
 
     try:
         settings = load_settings()
@@ -88,7 +129,13 @@ def run() -> None:
     if "rag_for_answers" not in st.session_state:
         st.session_state.rag_for_answers = True
 
-    st.sidebar.header("Session")
+    st.sidebar.title("🤖 Ayush AI")
+    if st.sidebar.button("＋ New chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.sidebar.divider()
+    st.sidebar.caption("CHAT SETTINGS")
     st.session_state.mode = st.sidebar.selectbox(
         "Mode",
         options=list(MODE_DETAILS.keys()),
@@ -103,28 +150,26 @@ def run() -> None:
     )
 
     rag_pipeline = st.session_state.rag_pipeline
-    st.session_state.rag_for_answers = st.sidebar.toggle(
-        "Use RAG for answers",
-        value=st.session_state.rag_for_answers,
-        disabled=rag_pipeline is None,
-        help="When enabled, the app retrieves context from rag/data before answering.",
-    )
-
-    if rag_pipeline:
-        if st.sidebar.button("Reindex RAG", use_container_width=True):
-            refreshed = rag_pipeline.index_data()
-            st.sidebar.success(
-                f"Reindexed: {refreshed.chunks_indexed} chunks from {refreshed.files_indexed} files"
-            )
-
-        rag_stats = rag_pipeline.stats
-        st.sidebar.caption(
-            f"RAG chunks indexed: {rag_stats.chunks_indexed} from {rag_stats.files_indexed} files"
+    with st.sidebar.expander("Knowledge base", expanded=True):
+        st.session_state.rag_for_answers = st.toggle(
+            "Use RAG for answers",
+            value=st.session_state.rag_for_answers,
+            disabled=rag_pipeline is None,
+            help="Retrieve relevant context from rag/data before answering.",
         )
-    else:
-        st.sidebar.caption("RAG disabled (RAG_ENABLED=0).")
 
-    st.sidebar.caption("Exa tools are enabled when EXA_API_KEY is configured.")
+        if rag_pipeline:
+            if st.button("Reindex RAG", use_container_width=True):
+                refreshed = rag_pipeline.index_data()
+                st.success(
+                    f"Indexed {refreshed.chunks_indexed} chunks from {refreshed.files_indexed} files"
+                )
+            rag_stats = rag_pipeline.stats
+            st.caption(f"{rag_stats.files_indexed} files · {rag_stats.chunks_indexed} chunks")
+        else:
+            st.caption("RAG disabled (RAG_ENABLED=0).")
+
+    st.sidebar.caption("Web search is available when EXA_API_KEY is configured.")
 
     state = SessionState(
         current_mode=st.session_state.mode,
@@ -136,7 +181,14 @@ def run() -> None:
         with st.chat_message(message["role"]):
             _render_chat_content(message["content"])
 
-    user_input = st.chat_input("Ask anything...")
+    if not st.session_state.messages:
+        st.markdown('<div class="chat-title">How can I help you today?</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="chat-subtitle">Ask about your knowledge base, code, or anything else.</div>',
+            unsafe_allow_html=True,
+        )
+
+    user_input = st.chat_input("Message Ayush AI...")
     if not user_input:
         return
 
