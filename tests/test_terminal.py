@@ -53,7 +53,9 @@ def test_main_interactive_mode_when_no_prompt(monkeypatch: pytest.MonkeyPatch) -
 
     called = {"interactive": False}
 
-    def fake_run_interactive_chat(*, client, state, no_effect: bool, rag_pipeline=None) -> int:
+    def fake_run_interactive_chat(
+        *, client, state, no_effect: bool, rag_pipeline=None
+    ) -> int:
         called["interactive"] = True
         return 0
 

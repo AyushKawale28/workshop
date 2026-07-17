@@ -45,7 +45,7 @@ class OpenRouterEmbeddingsClient:
         if not isinstance(data, list) or not data:
             raise RuntimeError("Embedding response did not contain vectors.")
 
-        vectors: list[list[float]] = []     
+        vectors: list[list[float]] = []
         for item in data:
             if not isinstance(item, dict):
                 continue
@@ -54,9 +54,7 @@ class OpenRouterEmbeddingsClient:
                 vectors.append([float(value) for value in vector])
 
         if len(vectors) != len(texts):
-            raise RuntimeError(
-                "Embedding response length did not match input length."
-            )
+            raise RuntimeError("Embedding response length did not match input length.")
 
         return vectors
 

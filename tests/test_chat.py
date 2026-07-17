@@ -146,7 +146,9 @@ def test_handle_command_rag_toggle_updates_runtime_state() -> None:
     rag_runtime = {"enabled": True}
     rag_pipeline = FakeRAGPipeline()
 
-    assert handle_command("/rag off", messages, state, rag_pipeline, rag_runtime) is True
+    assert (
+        handle_command("/rag off", messages, state, rag_pipeline, rag_runtime) is True
+    )
     assert rag_runtime["enabled"] is False
 
     assert handle_command("/rag on", messages, state, rag_pipeline, rag_runtime) is True

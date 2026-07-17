@@ -1,8 +1,18 @@
+import re
+
 from agentic_chat.core.config import Settings, load_settings
 from agentic_chat.core.modes import MODE_DETAILS, SessionState, build_messages
 from agentic_chat.externals.openrouter import OpenRouterClient
 from agentic_chat.rag.bootstrap import build_rag_pipeline
 from agentic_chat.rag.pipeline import build_rag_message
+
+
+FENCED_BLOCK_PATTERN = re.compile(
+    r"```(?P<language>[A-Za-z0-9_+#.-]*)[ \t]*\r?\n"
+    r"(?P<content>.*?)\r?\n```",
+    re.DOTALL,
+)
+OUTPUT_LANGUAGES = {"console", "output", "stdout"}
 
 
 def build_client(settings: Settings) -> OpenRouterClient:
@@ -20,6 +30,32 @@ def _render_event_log(events: list[str]) -> str:
     if not events:
         return "System > Generating response..."
     return "\n".join(f"- {line}" for line in events[-6:])
+
+
+def _render_chat_content(content: str) -> None:
+    import streamlit as st
+
+    position = 0
+    for match in FENCED_BLOCK_PATTERN.finditer(content):
+        markdown = content[position : match.start()].strip()
+        if markdown:
+            st.markdown(markdown)
+
+        language = match.group("language").lower()
+        is_output = language in OUTPUT_LANGUAGES
+        if is_output:
+            st.caption("Output")
+        st.code(
+            match.group("content"),
+            language="text" if is_output or not language else language,
+            line_numbers=not is_output,
+            wrap_lines=True,
+        )
+        position = match.end()
+
+    markdown = content[position:].strip()
+    if markdown:
+        st.markdown(markdown)
 
 
 def run() -> None:
@@ -98,7 +134,7 @@ def run() -> None:
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            _render_chat_content(message["content"])
 
     user_input = st.chat_input("Ask anything...")
     if not user_input:
@@ -106,7 +142,7 @@ def run() -> None:
 
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.markdown(user_input)
+        _render_chat_content(user_input)
 
     with st.chat_message("assistant"):
         status_box = st.empty()
@@ -129,7 +165,9 @@ def run() -> None:
 
             status_box.info(_render_event_log(event_log))
 
-        request_messages = build_messages(state.system_prompt, st.session_state.messages)
+        request_messages = build_messages(
+            state.system_prompt, st.session_state.messages
+        )
         if rag_pipeline and st.session_state.rag_for_answers:
             rag_context = rag_pipeline.build_context(user_input)
             if rag_context:
@@ -157,7 +195,7 @@ def run() -> None:
             reply = f"Error: {exc}"
 
         status_box.empty()
-        st.markdown(reply)
+        _render_chat_content(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
 

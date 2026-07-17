@@ -12,9 +12,11 @@ from agentic_chat.rag.embeddings import OpenRouterEmbeddingsClient
 RAG_SYSTEM_PREFIX = (
     "Use the following retrieved knowledge base context to answer the user. "
     "If the answer is not in the context, say you do not know based on the current knowledge base. "
-    "Do not invent facts outside this context."
+    "Do not invent facts outside this context. "
+    "Preserve fenced code examples. When an answer includes code and its expected output, "
+    "show them in separate fenced blocks."
 )
- 
+
 ALLOWED_RAG_SUFFIXES = {".md", ".txt", ".json", ".csv", ".rst"}
 
 
@@ -191,35 +193,35 @@ class RAGPipeline:
             text = str(payload.get("text") or "").strip()
             if not text:
                 continue
-            snippets.append(f"[{rank}] Source: {source} (chunk {chunk_index})\\n{text}")
+            snippets.append(f"[{rank}] Source: {source} (chunk {chunk_index})\n{text}")
             sources.append(source)
 
         if not snippets:
             return None
 
         return RAGContext(
-            text="\\n\\n".join(snippets),
+            text="\n\n".join(snippets),
             hits=len(snippets),
             sources=tuple(sorted(set(sources))),
         )
 
     def _chunk_text(self, text: str) -> list[str]:
-        cleaned = " ".join(text.split())
-        if not cleaned:
+        content = text.strip()
+        if not content:
             return []
 
-        if len(cleaned) <= self.chunk_size:
-            return [cleaned]
+        if len(content) <= self.chunk_size:
+            return [content]
 
         chunks: list[str] = []
         step = max(1, self.chunk_size - self.chunk_overlap)
         start = 0
-        while start < len(cleaned):
-            end = min(len(cleaned), start + self.chunk_size)
-            chunk = cleaned[start:end].strip()
+        while start < len(content):
+            end = min(len(content), start + self.chunk_size)
+            chunk = content[start:end].strip()
             if chunk:
                 chunks.append(chunk)
-            if end >= len(cleaned):
+            if end >= len(content):
                 break
             start += step
         return chunks
@@ -228,5 +230,5 @@ class RAGPipeline:
 def build_rag_message(context: RAGContext) -> dict[str, str]:
     return {
         "role": "system",
-        "content": f"{RAG_SYSTEM_PREFIX}\\n\\nRAG CONTEXT:\\n{context.text}",
+        "content": f"{RAG_SYSTEM_PREFIX}\n\nRAG CONTEXT:\n{context.text}",
     }

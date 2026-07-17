@@ -67,7 +67,8 @@ Responsibilities:
 
 Notes:
 - index is in-memory (`QdrantClient(location=":memory:")`)
-- markdown chunk files (for example `rag/data/fairy_tale_rag_chunks/*.md`) improve retrieval precision
+- markdown chunk files (for example `rag/data/java_oop_concepts_chunks/*.md`) improve retrieval precision
+- source-code indentation and fenced output blocks are preserved during indexing
 
 ### 5) Externals Layer
 
